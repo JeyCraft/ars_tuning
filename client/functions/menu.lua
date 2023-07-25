@@ -34,10 +34,13 @@ local function openModsMenu(veh, mod, maxMods)
         Wait(1)
     end
 
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 100
+    SetVehicleModKit(veh, 0)
 
-    for i = 1, maxMods, 1 do
-        local modNativeLabel = GetLabelText(GetModTextLabel(vehicle, modNum, i))
+    for i = 0, maxMods, 1 do
+        local modNumToSet = i - 1
+
+        local modNativeLabel = GetLabelText(GetModTextLabel(vehicle, modNum, modNumToSet))
 
         if modNativeLabel == "NULL" then
             modLabel = modLabel
@@ -45,9 +48,7 @@ local function openModsMenu(veh, mod, maxMods)
             modLabel = modNativeLabel
         end
 
-        if currentMod == -1 then currentMod = maxMods end
-
-        if i == maxMods then
+        if modNumToSet == -1 then
             menuTitle = locale("base_mod")
         else
             menuTitle = modLabel .. " " .. i
@@ -55,8 +56,7 @@ local function openModsMenu(veh, mod, maxMods)
 
         if modType == "modHorns" then menuTitle = getHornName(i) end
 
-
-        if i == currentMod then
+        if modNumToSet == currentMod or modNumToSet == maxMods then
             disabled = true
         else
             disabled = false
@@ -65,10 +65,10 @@ local function openModsMenu(veh, mod, maxMods)
         local modPercentage
         if type(modPrice) == "table" then
             for m = 1, #modPrice, 1 do
-                if m == i then
+                if i == m then
                     modPercentage = modPrice[i] / 100
                     break
-                elseif i == maxMods then
+                elseif modNumToSet == -1 then
                     modPercentage = modPrice[1] / 100
                     break
                 end
@@ -85,10 +85,10 @@ local function openModsMenu(veh, mod, maxMods)
                 icon = icon,
                 iconColor = getVehicleColor(),
                 disabled = disabled,
-                description = price .. "$",
+                description = price .. "€",
                 onSelect = function()
                     local properties = {}
-                    properties[modType] = i
+                    properties[modType] = modNumToSet
                     lib.setVehicleProperties(vehicle, properties)
                     playSound('Zoom_In', 'DLC_HEIST_PLANNING_BOARD_SOUNDS')
 
@@ -100,14 +100,14 @@ local function openModsMenu(veh, mod, maxMods)
                         modLabel = modLabel,
                         modType = modType,
                         modNum = modNum,
-                        modLevel = i,
+                        modLevel = modNumToSet,
                         modPrice = price,
                     }
 
                     local foundMatch = false
-                    for i, existingModData in ipairs(cart) do
+                    for l, existingModData in ipairs(cart) do
                         if existingModData.modType == modType then
-                            cart[i] = newModData
+                            cart[l] = newModData
                             foundMatch = true
                             break
                         end
@@ -138,7 +138,7 @@ end
 local function openTurboMenu()
     local vehicle = cache.vehicle
     local enabled = getVehicleProperties(vehicle).modTurbo
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 50000
 
 
     lib.registerContext({
@@ -339,7 +339,7 @@ local function openPearlescentMenu()
     local options = {}
     local vehicle = cache.vehicle
     local colors = colors.pearlescent
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 50000
 
     for i = 1, #colors, 1 do
         table.insert(options,
@@ -435,7 +435,7 @@ local function openXenonMenu()
 
     local vehicle = cache.vehicle
     local colors = colors.xenon
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 50000
 
     for i = 1, #colors, 1 do
         local disabled = false
@@ -548,7 +548,7 @@ end
 
 local function openColorMenu()
     local vehicle = cache.vehicle
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 50000
     local modPercentage = mods.color.price / 100
     local price = vehiclePrice * modPercentage
 
@@ -910,7 +910,7 @@ end
 
 local function windowTintMenu()
     local vehicle = cache.vehicle
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 50000
 
     lib.registerContext({
         id = 'windowTint',
@@ -1119,7 +1119,7 @@ end
 
 local function platesColorMenu()
     local vehicle = cache.vehicle
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 50000
 
     lib.registerContext({
         id = 'platesColorMenu',
@@ -1352,7 +1352,7 @@ local function wheelColors()
     local vehicle = cache.vehicle
     local colors = colors.pearlescent
 
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 50000
     local modPercentage = mods.wheelsColor.price / 100
     local price = vehiclePrice * modPercentage
 
@@ -1576,7 +1576,7 @@ end
 local function openWheelsMenu()
     local vehicle = cache.vehicle
 
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 50000
     local modPercentage = mods.wheelsColor.price / 100
     local price = vehiclePrice * modPercentage
 
@@ -1640,10 +1640,11 @@ local function openWheelsMenu()
                     if not foundMatch then
                         table.insert(cart, newModData)
                     end
-                    currentVehProperties.new = getVehicleProperties(vehicle)
 
                     lib.setVehicleProperties(vehicle, { modSmokeEnabled = true })
                     lib.setVehicleProperties(vehicle, { tyreSmokeColor = { r, g, b } })
+
+                    currentVehProperties.new = getVehicleProperties(vehicle)
                     openWheelsMenu()
                 end
             },
@@ -1665,7 +1666,7 @@ end
 local function openNeonMenu()
     local vehicle = cache.vehicle
     local disabled = getVehicleProperties(vehicle).neonEnabled
-    local vehiclePrice = getVehiclePrice(vehicle)
+    local vehiclePrice = getVehiclePrice(vehicle) or 50000
 
     if not disabled[1] then disabled = true else disabled = false end
 
@@ -1756,11 +1757,13 @@ local function openNeonMenu()
                     if not foundMatch then
                         table.insert(cart, newModData)
                     end
-                    currentVehProperties.new = getVehicleProperties(vehicle)
 
 
                     lib.setVehicleProperties(vehicle, { neonEnabled = { true, true, true, true } })
                     lib.setVehicleProperties(vehicle, { neonColor = { r, g, b } })
+
+                    currentVehProperties.new = getVehicleProperties(vehicle)
+
                     openNeonMenu()
                 end
             },
